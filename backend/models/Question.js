@@ -26,7 +26,7 @@ const mainQuestionSchema = new mongoose.Schema(
     },
     upperThreshold: {
       type: Number,
-      default: 0.8,
+      default: 0.65,
     },
     lowerThreshold: {
       type: Number,

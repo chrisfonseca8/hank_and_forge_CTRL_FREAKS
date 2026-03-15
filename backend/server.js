@@ -2,6 +2,8 @@
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import express from 'express'
+import cors from 'cors'
+
 
 
 dotenv.config();
@@ -10,6 +12,13 @@ const app = express();
 
 // middleware
 app.use(express.json());
+app.use(cors({
+  origin: "http://localhost:5173"
+}));
+
+app.use(express.urlencoded({ extended: true }));
+
+
 
 /*
   MongoDB Connection
@@ -42,6 +51,8 @@ app.use("/api/interview", interviewRoutes);
   Start Server
 */
 const PORT = process.env.PORT || 5000;
+
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

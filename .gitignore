@@ -1,3 +1,27 @@
+# Node modules
 node_modules/
+frontend/node_modules/
+
+# Environment variables
 .env
-.env.*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+
+# Vite cache
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
