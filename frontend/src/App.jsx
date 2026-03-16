@@ -54,16 +54,29 @@ export default function App() {
     }
   };
 
-  // ── End interview (early) ────────────────────────────────
-  const handleEnd = (message = null) => {
-    setEndReport({ message, average: null, questionsAnswered: null, early: true });
+  // ── End interview (early OR exhausted) ─────────────────────
+  // Both paths now receive the same object shape from InterviewPage:
+  // { message, finalSummary, totalAnswered, averageScore, early }
+  const handleEnd = ({ message, finalSummary, totalAnswered, averageScore } = {}) => {
+    setEndReport({
+      message,
+      finalSummary:   finalSummary ?? null,
+      average:        averageScore ?? null,
+      questionsAnswered: totalAnswered ?? null,
+      early: true,
+    });
     setPage(PAGE.END);
   };
 
-  // ── Pool exhausted — carry final stats to EndPage ────────
-  const handleExhausted = ({ message, average, questionsAnswered }) => {
-    localStorage.removeItem(SESSION_KEY);
-    setEndReport({ message, average, questionsAnswered, early: false });
+  // ── Pool exhausted — carry final stats + summary to EndPage ──
+  const handleExhausted = ({ message, finalSummary, totalAnswered, averageScore }) => {
+    setEndReport({
+      message,
+      finalSummary:   finalSummary ?? null,
+      average:        averageScore ?? null,
+      questionsAnswered: totalAnswered ?? null,
+      early: false,
+    });
     setPage(PAGE.END);
   };
 
@@ -84,7 +97,7 @@ export default function App() {
 
       {/* ── Header ──────────────────────────────────────── */}
       <header className="app-header">
-        <span className="logo">◈ AdaptIQ Recruit</span>
+        <span className="logo">◈ RecruitSM AI</span>
 
         {/* Show candidate context once interview has started */}
         {page === PAGE.INTERVIEW && candidateName && (

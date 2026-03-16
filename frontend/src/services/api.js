@@ -27,3 +27,14 @@ export const submitAnswer = async (sessionId, answer) => {
   const { data } = await api.post("/answer", { sessionId, answer });
   return data;
 };
+
+/**
+ * End the session and retrieve the AI final summary.
+ * Called when the candidate finishes or withdraws early.
+ * @param {string} sessionId
+ * @returns {{ finalSummary: string, totalAnswered: number, averageScore: number|null }}
+ */
+export const endSession = async (sessionId) => {
+  const { data } = await api.post("/session/end", { sessionId });
+  return data;
+};

@@ -12,7 +12,7 @@ const getSuitability = (avg) => {
 };
 
 export default function EndPage({ candidateName, role, report, onRestart }) {
-  const { average, questionsAnswered, early } = report ?? {};
+  const { average, questionsAnswered, early, finalSummary } = report ?? {};
   const suitability = getSuitability(average);
   const avgPct      = average != null ? Math.round(average * 100) : null;
 
@@ -91,6 +91,14 @@ export default function EndPage({ candidateName, role, report, onRestart }) {
               />
             </div>
             <span className="report-score-label">{avgPct}% overall performance</span>
+          </div>
+        )}
+
+        {/* ── Final Summary ───────────────────────────── */}
+        {finalSummary && (
+          <div className="report-summary">
+            <p className="report-summary-label">AI Assessment Summary</p>
+            <p className="report-summary-text">{finalSummary}</p>
           </div>
         )}
 

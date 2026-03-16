@@ -56,6 +56,12 @@ const interviewSessionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+
+  // Set by the /session/end endpoint when the session is closed
+  endedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 export default mongoose.model("InterviewSession", interviewSessionSchema);

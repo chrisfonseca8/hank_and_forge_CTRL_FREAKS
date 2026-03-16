@@ -138,3 +138,55 @@ export const evaluateAnswer = async (questionText, answer, evaluationPoints) => 
 // Internal helpers
 // ─────────────────────────────────────────────────────────────
 const _sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+
+// ─────────────────────────────────────────────────────────────
+// getFinalSummary(allReviews)
+//
+// Calls POST http://10.62.193.181:8000/final_summary/
+// with the full list of per-question review texts collected
+// across the interview session.
+//
+// The Python API expects: JSON body → List[str]
+// Returns: { "final_summary": "..." }
+//
+// @param {string[]} allReviews  Every review_text from this session
+// @returns {string}             The final summary paragraph
+// ─────────────────────────────────────────────────────────────
+export const getFinalSummary = async (allReviews = []) => {
+  // If no answers were evaluated yet (early withdrawal with 0 questions),
+  // skip the network call entirely.
+  if (!allReviews.length) {
+    return "No answers were submitted during this session.";
+  }
+
+  const SUMMARY_URL = "http://10.62.193.181:8000/final_summary/";
+  const startTime   = Date.now();
+
+  try {
+    console.log(`[evaluationService] calling /final_summary/ with ${allReviews.length} review(s)`);
+
+    const { data } = await axios.post(
+      SUMMARY_URL,
+      allReviews,          // JSON array body — matches List[str] = Body(...) in FastAPI
+      {
+        headers: { "Content-Type": "application/json" },
+        timeout: ML_TIMEOUT_MS,
+        validateStatus: (status) => status < 500,
+      }
+    );
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[evaluationService] /final_summary/ responded in ${elapsed}ms`);
+
+    return data.final_summary ?? "Summary unavailable.";
+
+  } catch (err) {
+    const elapsed = Date.now() - startTime;
+    console.error(
+      `[evaluationService] /final_summary/ failed after ${elapsed}ms: ${err.message}`
+    );
+    // Non-fatal — return a graceful fallback so the end page still loads
+    return "Final summary could not be generated at this time.";
+  }
+};

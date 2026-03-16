@@ -18,7 +18,7 @@ import {
   resolveByDistance,
   getAverage,
 } from "../utils/scoring.js";
-import { evaluateAnswer } from "../services/evaluationService.js";
+import { evaluateAnswer, getFinalSummary } from "../services/evaluationService.js";
 
 // ─────────────────────────────────────────────────────────────
 // Internal helper — builds the standard response payload.
@@ -300,4 +300,75 @@ const _nextQuestionResponse = async (
       false  // always a fresh main question
     )
   );
+};
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/interview/session/end
+// Body:     { sessionId }
+//
+// Called by the frontend when:
+//   (a) The candidate clicks "Withdraw from Interview" (early end)
+//   (b) The question pool is exhausted and the candidate clicks
+//       "View Assessment Report"
+//
+// Flow:
+//   1. Load all EvaluatedAnswer documents for this session
+//   2. Extract each review_text into an ordered array
+//   3. Call Python /final_summary/ with the review array
+//   4. Return { finalSummary, totalAnswered, averageScore }
+//
+// Response: { finalSummary, totalAnswered, averageScore }
+// ─────────────────────────────────────────────────────────────
+export const endSession = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: "sessionId is required." });
+    }
+
+    // ── Fetch all evaluated answers for this session ───────────
+    // Sort by createdAt so the summary reflects chronological order.
+    const answers = await EvaluatedAnswer.find({ sessionId })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    // ── Build the reviews array for the Python API ─────────────
+    // Filter out empty/null reviews so the model isn't fed blank strings.
+    const allReviews = answers
+      .map((a) => a.review)
+      .filter((r) => r && r.trim() !== "");
+
+    // ── Compute session statistics ─────────────────────────────
+    const totalAnswered = answers.length;
+    const averageScore  =
+      totalAnswered > 0
+        ? parseFloat(
+            (
+              answers.reduce((sum, a) => sum + a.score, 0) / totalAnswered
+            ).toFixed(4)
+          )
+        : null;
+
+    // ── Call Python /final_summary/ ───────────────────────────
+    // getFinalSummary never throws — it returns a fallback string on error.
+    const finalSummary = await getFinalSummary(allReviews);
+
+    // ── Mark session as ended (best-effort) ───────────────────
+    await InterviewSession.findByIdAndUpdate(sessionId, {
+      $set: { endedAt: new Date() },
+    }).catch((err) =>
+      console.warn("[endSession] Could not mark session as ended:", err.message)
+    );
+
+    return res.status(200).json({
+      finalSummary,
+      totalAnswered,
+      averageScore,
+    });
+
+  } catch (err) {
+    console.error("[endSession]", err);
+    return res.status(500).json({ error: "Failed to generate final summary." });
+  }
 };
